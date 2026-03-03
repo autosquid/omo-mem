@@ -1,6 +1,45 @@
 # AGENTS.md - omo-mem Memory System
 
+**Generated:** 2026-03-04 | **Commit:** 482f37b | **Branch:** master
+
 This is your memory workspace. Files are your memory — don't rely on "mental notes."
+
+---
+
+## OVERVIEW
+
+Persistent memory system for opencode/oh-my-opencode. Enables cross-session continuity via a three-layer markdown hierarchy: **SOUL.md** (identity) → **MEMORY.md** (long-term) → **memory/YYYY-MM-DD.md** (daily). Pure markdown — no code, no build step. Cross-machine sync via Syncthing.
+
+---
+
+## WHERE TO LOOK
+
+| Task | File | Notes |
+|------|------|-------|
+| AI behavior, work style, boundaries | `SOUL.md` | Identity layer — read first at session start |
+| Machines, projects, lessons, gotchas | `MEMORY.md` | Long-term layer — keep curated |
+| Today's session context | `memory/YYYY-MM-DD.md` | Short-term layer — raw logs |
+| Search history > 2 days back | `memory/*.md` | `grep -r "keyword" memory/` |
+| Install on a new machine | `init.sh` | Also creates `~/.claude/agents/omo-mem.md` |
+| Cross-device sync setup | `sync-setup.sh` | Syncthing public relays, no port forwarding |
+| Sync exclusion rules | `.stignore` | `.git`, `.sisyphus`, `.DS_Store` excluded |
+
+---
+
+## STRUCTURE
+
+```
+~/workspace/omo-mem/
+├── SOUL.md          # Identity layer — AI principles & boundaries
+├── MEMORY.md        # Long-term layer — curated knowledge
+├── AGENTS.md        # This file — memory system rules
+├── README.md        # User docs + sync setup guide
+├── init.sh          # Install: creates all files + ~/.claude/agents/omo-mem.md
+├── sync-setup.sh    # Syncthing cross-device sync helper
+├── .stignore        # Syncthing exclusion patterns
+└── memory/          # Short-term layer
+    └── YYYY-MM-DD.md
+```
 
 ---
 
@@ -31,34 +70,21 @@ Don't ask for permission. Just do it.
 
 **When the user asks about historical context ("what did we do before", "that bug last time"), don't just look at the last two days.**
 
-Proactively search the `memory/` directory:
-```
-# List all daily notes
-ls memory/
-
-# Search keywords
-grep -r "keyword" memory/
-
-# Read specific date
-cat memory/2026-02-15.md
+```bash
+ls memory/                    # list all daily notes
+grep -r "keyword" memory/     # search across all notes
 ```
 
 **Search priority:**
-1. Search `MEMORY.md` first (curated long-term memory)
-2. If not found, grep the `memory/` directory
-3. Once found, read and report the results
-
-**Typical scenarios:**
-- "What was the conclusion from our discussion about X?" → Search memory/ directory
-- "How did we solve that bug last time?" → grep "bug" or related keywords
-- "That environment we configured before..." → Check MEMORY.md first, then search daily notes
+1. `MEMORY.md` first (curated long-term memory)
+2. If not found, grep `memory/` directory
+3. Read and report results
 
 ---
 
 ## What to Write Where
 
 ### → Update MEMORY.md
-
 - New machine/environment configurations
 - Key architectural decisions for projects
 - Problems encountered and solutions
@@ -66,7 +92,6 @@ cat memory/2026-02-15.md
 - Technical knowledge worth remembering long-term
 
 ### → Write to daily note
-
 - What happened during the session
 - Debugging process and attempts
 - Temporary context
@@ -76,8 +101,7 @@ cat memory/2026-02-15.md
 
 ## Periodic Maintenance
 
-Every few days, proactively execute:
-
+Every few days:
 1. **Review** — Read recent `memory/YYYY-MM-DD.md` files
 2. **Curate** — Extract valuable content into `MEMORY.md`
 3. **Prune** — Remove outdated information from `MEMORY.md`
@@ -98,6 +122,41 @@ Every few days, proactively execute:
 ## For Next Session
 <!-- Context needed for the next session -->
 ```
+
+---
+
+## COMMANDS
+
+```bash
+# Install on new machine
+./init.sh
+
+# Set up cross-device sync (Syncthing)
+./sync-setup.sh
+
+# Search memory history
+grep -r "keyword" memory/
+
+# Find sync conflicts
+find . -name '*.sync-conflict*'
+
+# Check Syncthing status (macOS)
+brew services info syncthing
+
+# Activate in any opencode session
+@omo-mem
+```
+
+---
+
+## ANTI-PATTERNS
+
+- **Don't** add code, tests, or build tooling — pure markdown system
+- **Don't** commit/push without being asked
+- **Don't** let `MEMORY.md` accumulate raw logs — curate, don't dump
+- **Don't** pretend to remember previous sessions — read the files
+- **Don't** edit `.sisyphus/` — opencode runtime data, excluded from sync
+- **Don't** version daily notes in git — they sync via Syncthing per-device
 
 ---
 

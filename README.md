@@ -150,18 +150,112 @@ opencode
 | **Long-term** | `MEMORY.md` | Machine topology, project context, lessons learned, preferences |
 | **Short-term** | `memory/YYYY-MM-DD.md` | Daily session logs, temporary context |
 
-## Cross-Machine Sync
+## Cross-Machine Sync (Syncthing)
 
-omo-mem uses plain markdown files. Sync via:
+omo-mem syncs across devices using [Syncthing](https://syncthing.net/) with public relays. This allows devices on different networks to sync without port forwarding.
 
-- **Apple Notes** — Copy/paste file contents
-- **Slack** — Share as code blocks
-- **Git** — If machines have network access
+### Quick Setup
 
-The key files to sync:
-1. `SOUL.md` — Your AI behavior principles (usually stable)
-2. `MEMORY.md` — Your curated memory
-3. Recent `memory/*.md` — Last few days of context
+```bash
+# Run the setup helper
+./sync-setup.sh
+```
+
+The script will:
+- Check if Syncthing is installed (with install instructions if not)
+- Show your device ID (needed to connect devices)
+- Print step-by-step folder setup instructions
+
+### Manual Setup
+
+1. **Install Syncthing**
+
+   macOS:
+   ```bash
+   brew install syncthing
+   brew services start syncthing
+   ```
+
+   Ubuntu:
+   ```bash
+   # Add official repo
+   sudo mkdir -p /etc/apt/keyrings
+   sudo curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg
+   echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable" | sudo tee /etc/apt/sources.list.d/syncthing.list
+   sudo apt-get update && sudo apt-get install syncthing
+   
+   # Start service
+   systemctl --user enable syncthing
+   systemctl --user start syncthing
+   ```
+
+2. **Get your device ID**
+   ```bash
+   syncthing device-id
+   ```
+
+3. **Open Web UI**: http://localhost:8384
+
+4. **Add remote devices**: Paste device IDs from other machines
+
+5. **Add omo-mem folder**:
+   - Folder Label: `omo-mem`
+   - Folder Path: `~/workspace/omo-mem`
+   - Share with: Select all your devices
+
+### Synced Files
+
+| Synced | Excluded |
+|--------|----------|
+| SOUL.md | .git/ |
+| MEMORY.md | .DS_Store |
+| AGENTS.md | *.swp, *~ |
+| memory/*.md | .sisyphus/ |
+| README.md | .stversions/ |
+
+See `.stignore` for the full exclusion list.
+
+### Handling Conflicts
+
+When the same file is edited on multiple devices before syncing, Syncthing creates conflict files:
+
+```
+MEMORY.sync-conflict-20260226-143052-ABCDEFG.md
+```
+
+To resolve:
+```bash
+# Find conflicts
+find ~/workspace/omo-mem -name '*.sync-conflict*'
+
+# Compare with original
+diff MEMORY.md MEMORY.sync-conflict-*.md
+
+# Merge manually, then delete conflict file
+rm *.sync-conflict*
+```
+
+### Security
+
+- All traffic is TLS encrypted end-to-end
+- Public relays cannot read your data (they only relay encrypted packets)
+- No account required, fully decentralized
+
+### Useful Commands
+
+```bash
+# Check device ID
+syncthing device-id
+
+# Find sync conflicts
+find ~/workspace/omo-mem -name '*.sync-conflict*'
+
+# Check status (macOS)
+brew services info syncthing
+
+# Check status (Ubuntu)
+systemctl --user status syncthing
+```
 
 ## Customization
 
