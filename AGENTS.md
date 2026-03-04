@@ -20,7 +20,7 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 | Machines, projects, lessons, gotchas | `MEMORY.md` | Long-term layer — keep curated |
 | Today's session context | `memory/YYYY-MM-DD.md` | Short-term layer — raw logs |
 | Search history > 2 days back | `memory/*.md` | `grep -r "keyword" memory/` |
-| Install on a new machine | `init.sh` | Also creates `~/.claude/agents/omo-mem.md` |
+| Install on a new machine | `init.sh` | init.sh installs plugin, patches opencode.json |
 | Cross-device sync setup | `sync-setup.sh` | Syncthing public relays, no port forwarding |
 | Sync exclusion rules | `.stignore` | `.git`, `.sisyphus`, `.DS_Store` excluded |
 
@@ -37,6 +37,7 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 ├── init.sh          # Install: creates all files + ~/.claude/agents/omo-mem.md
 ├── sync-setup.sh    # Syncthing cross-device sync helper
 ├── .stignore        # Syncthing exclusion patterns
+├── plugin/          # opencode plugin (omo-mem.js)
 └── memory/          # Short-term layer
     └── YYYY-MM-DD.md
 ```
@@ -45,14 +46,7 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 
 ## Session Startup
 
-**Before doing anything else, execute these steps:**
-
-1. **Read `SOUL.md`** — Your core identity and behavior principles
-2. **Read `MEMORY.md`** — Your long-term memory (machine topology, project context, lessons learned)
-3. **Read `memory/YYYY-MM-DD.md`** (today + yesterday) — Recent context
-4. **Create today's note** — If `memory/YYYY-MM-DD.md` doesn't exist, create it
-
-Don't ask for permission. Just do it.
+omo-mem plugin automatically injects SOUL.md, MEMORY.md, and today's daily note into every session's system prompt. No `@omo-mem` mention needed.
 
 ---
 
@@ -63,6 +57,19 @@ Don't ask for permission. Just do it.
 | **Identity** | `SOUL.md` | AI behavior principles, work style, core beliefs |
 | **Long-term** | `MEMORY.md` | Machine topology, project context, lessons learned, preferences |
 | **Short-term** | `memory/YYYY-MM-DD.md` | Daily raw notes, session logs |
+
+---
+
+## Memory Tools
+
+The plugin exposes 6 memory CRUD tools:
+
+- **memory_list** — List all memory files (SOUL.md, MEMORY.md, daily notes)
+- **memory_read** — Read a file. Args: `file` (`"SOUL.md"`, `"MEMORY.md"`, `"daily"`, or `"memory/YYYY-MM-DD.md"`)
+- **memory_write** — Overwrite a file entirely. SOUL.md is read-only. Args: `file`, `content`
+- **memory_append** — Append to a file without reading first. SOUL.md is read-only. Args: `file`, `content`
+- **memory_patch** — Find-and-replace exact text. Allowed on all files including SOUL.md. Args: `file`, `find`, `replace`
+- **memory_delete_lines** — Delete line range (1-indexed, inclusive). SOUL.md is read-only. Args: `file`, `from_line`, `to_line`
 
 ---
 
@@ -128,7 +135,7 @@ Every few days:
 ## COMMANDS
 
 ```bash
-# Install on new machine
+# Install on new machine (custom path: OMO_MEM_DIR=/custom/path ./init.sh)
 ./init.sh
 
 # Set up cross-device sync (Syncthing)
@@ -142,9 +149,6 @@ find . -name '*.sync-conflict*'
 
 # Check Syncthing status (macOS)
 brew services info syncthing
-
-# Activate in any opencode session
-@omo-mem
 ```
 
 ---
@@ -157,6 +161,7 @@ brew services info syncthing
 - **Don't** pretend to remember previous sessions — read the files
 - **Don't** edit `.sisyphus/` — opencode runtime data, excluded from sync
 - **Don't** version daily notes in git — they sync via Syncthing per-device
+- **Don't** try to `@omo-mem` — the plugin is always active
 
 ---
 

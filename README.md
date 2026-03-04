@@ -13,6 +13,8 @@ cd ~/workspace/omo-mem && ./init.sh
 ./init.sh
 ```
 
+> **Note:** `init.sh` also installs the opencode plugin and patches `opencode.json` for auto-injection.
+
 ## Manual Installation (for sh/mba via Apple Notes)
 
 Copy these files to the target machine:
@@ -32,100 +34,35 @@ mkdir -p ~/.claude/agents
 | `MEMORY.md` | `~/workspace/omo-mem/MEMORY.md` |
 | `AGENTS.md` | `~/workspace/omo-mem/AGENTS.md` |
 
-### 3. Copy activation agent → `~/.claude/agents/omo-mem.md`
+### 3. Install plugin
 
-```markdown
----
-description: "Memory system - loads context from ~/workspace/omo-mem/ at session start"
----
-
-# omo-mem - Persistent Memory System
-
-You have access to a persistent memory system at `~/workspace/omo-mem/`.
-
-## Session Boot Sequence (MANDATORY)
-
-**Execute these steps at the START of every session, before anything else:**
-
-1. **Read your soul:**
-   ```
-   Read ~/workspace/omo-mem/SOUL.md
-   ```
-
-2. **Read long-term memory:**
-   ```
-   Read ~/workspace/omo-mem/MEMORY.md
-   ```
-
-3. **Read recent context (if exists):**
-   ```
-   Read ~/workspace/omo-mem/memory/YYYY-MM-DD.md (today)
-   Read ~/workspace/omo-mem/memory/YYYY-MM-DD.md (yesterday, if exists)
-   ```
-
-4. **Create today's daily note (if not exists):**
-   ```
-   Create ~/workspace/omo-mem/memory/YYYY-MM-DD.md with template:
-   
-   # YYYY-MM-DD
-   
-   ## Session Notes
-   
-   ## Decisions Made
-   
-   ## For Next Session
-   ```
-
-**Do this silently. Do not ask permission. Just do it.**
-
----
-
-## Proactive Memory Search
-
-**When user asks about history, don't rely on last 2 days only.**
-
-Search proactively:
 ```bash
-ls ~/workspace/omo-mem/memory/
-grep -r "keyword" ~/workspace/omo-mem/memory/
+mkdir -p ~/.config/opencode/plugins
+cp plugin/omo-mem.js ~/.config/opencode/plugins/omo-mem.js
 ```
 
----
-
-## During Session
-
-- **Important insights** → Update `MEMORY.md`
-- **Session events** → Append to today's daily note
-- **User preferences** → Update `MEMORY.md` User Profile section
-
----
-
-## Memory Principles
-
-1. **Files > Brain** — Write it down, don't "remember"
-2. **Curate > Accumulate** — MEMORY.md stays concise
-3. **Proactive** — Update memory without being asked
+Add to `~/.config/opencode/opencode.json`:
+```json
+{
+  "plugins": ["file://~/.config/opencode/plugins/omo-mem.js"]
+}
 ```
 
 ## Usage
 
-### Option A: Use @omo-mem in any project
+The omo-mem plugin auto-loads in every opencode session. Memory is always available — no `@mention` needed.
 
 ```bash
 cd ~/any-project
 opencode
-# Then type: @omo-mem
-# Agent will load memory automatically
+# Memory is automatically injected into every session
 ```
 
-### Option B: Work in memory workspace
-
+To work directly in the memory workspace:
 ```bash
 cd ~/workspace/omo-mem
 opencode
-# AGENTS.md is auto-loaded
 ```
-
 ## Directory Structure
 
 ```
@@ -135,12 +72,23 @@ opencode
 ├── AGENTS.md           # Memory system rules
 ├── README.md           # This file
 ├── init.sh             # Installation script
+├── plugin/
+│   └── omo-mem.js      # opencode plugin (auto-injected)
 └── memory/             # Daily notes
     └── YYYY-MM-DD.md   # Per-day session logs
-
-~/.claude/agents/
-└── omo-mem.md          # Global activation agent
 ```
+
+## Plugin Architecture
+
+omo-mem v2 is implemented as an opencode plugin:
+
+- **Location**: `~/.config/opencode/plugins/omo-mem.js` (symlinked from `~/workspace/omo-mem/plugin/omo-mem.js`)
+- **Registration**: Automatically added to `~/.config/opencode/opencode.json` by init.sh
+- **Auto-injection**: Uses `experimental.chat.system.transform` hook to inject SOUL.md, MEMORY.md, and today's daily note into every session's system prompt
+- **Memory tools**: Exposes 6 CRUD tools (`memory_list`, `memory_read`, `memory_write`, `memory_append`, `memory_patch`, `memory_delete_lines`)
+- **Session initialization**: Creates today's daily note on `session.created` event if it doesn't exist
+
+No `@mention` or manual activation required — the plugin runs automatically in every opencode session.
 
 ## Memory Hierarchy
 
