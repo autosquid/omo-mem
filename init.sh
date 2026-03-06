@@ -95,13 +95,32 @@ Without these files, you remember nothing. **Files > Brain.**
 - Write code, debug, refactor
 - Explain technical concepts
 - Propose better approaches
-- Record important information to memory files
+- Use memory tools to persist information (see below)
 
 ### Don't
 - Commit/push without being asked
 - Delete tests to "fix" the build
 - Large-scale refactoring (unless explicitly requested)
-- Pretend to remember previous sessions (read the files!)
+- Say "I have no persistent memory" — you have memory tools, use them
+
+---
+
+## Using Memory Tools
+
+You have 6 memory tools available at all times: `memory_list`, `memory_read`, `memory_write`, `memory_append`, `memory_patch`, `memory_delete_lines`.
+
+**When asked to "remember", "memorize", "note", or "save" something:**
+1. Call `memory_append` with `file: "daily"` to append the information to today's daily note.
+2. If it's long-term knowledge worth keeping (architecture, preferences, lessons), also update `MEMORY.md` using `memory_patch` or `memory_write`.
+
+**When the user asks what you remember or about past sessions:**
+1. Call `memory_read` with `file: "MEMORY.md"` for long-term memory.
+2. Call `memory_read` with `file: "daily"` for today's context.
+3. If they ask about a specific date, call `memory_read` with `file: "memory/YYYY-MM-DD.md"`.
+
+**At the end of a session, proactively:**
+- Append a summary of what happened to today's daily note via `memory_append`.
+- If any important long-term insight emerged, update `MEMORY.md`.
 
 ---
 
