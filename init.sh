@@ -793,6 +793,76 @@ else
   echo ""
 fi
 
+# ─── Install sync-daemon.js ───────────────────────────────────────────────────
+SYNC_DAEMON_SRC="$OMO_MEM_DIR/sync-daemon.js"
+LAUNCHD_PLIST="$HOME/Library/LaunchAgents/com.omo-mem.sync.plist"
+
+# Only install daemon on macOS
+if [ "$(uname)" = "Darwin" ]; then
+
+  # Copy sync-daemon.js if it lives next to init.sh (repo install)
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if [ -f "$SCRIPT_DIR/sync-daemon.js" ] && [ "$SCRIPT_DIR/sync-daemon.js" != "$SYNC_DAEMON_SRC" ]; then
+    cp "$SCRIPT_DIR/sync-daemon.js" "$SYNC_DAEMON_SRC"
+    echo "✓ Copied sync-daemon.js to $SYNC_DAEMON_SRC"
+  elif [ -f "$SYNC_DAEMON_SRC" ]; then
+    echo "• sync-daemon.js already at $SYNC_DAEMON_SRC"
+  else
+    echo "⚠️  sync-daemon.js not found — skipping daemon install"
+  fi
+
+  if [ -f "$SYNC_DAEMON_SRC" ]; then
+    # Detect node path
+    NODE_PATH="$(command -v node 2>/dev/null || echo '/usr/local/bin/node')"
+
+    # Write launchd plist
+    mkdir -p "$HOME/Library/LaunchAgents"
+    cat > "$LAUNCHD_PLIST" << PLIST_EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.omo-mem.sync</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${NODE_PATH}</string>
+    <string>${SYNC_DAEMON_SRC}</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>OMO_MEM_DIR</key>
+    <string>${OMO_MEM_DIR}</string>
+    <key>OMO_SYNC_INTERVAL</key>
+    <string>60</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/tmp/omo-mem-sync.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/omo-mem-sync.err</string>
+</dict>
+</plist>
+PLIST_EOF
+    echo "✓ Created launchd plist at $LAUNCHD_PLIST"
+
+    # Unload if already loaded (ignore errors), then load
+    launchctl unload "$LAUNCHD_PLIST" 2>/dev/null || true
+    if launchctl load "$LAUNCHD_PLIST" 2>/dev/null; then
+      echo "✓ Sync daemon loaded (com.omo-mem.sync)"
+    else
+      echo "⚠️  launchctl load failed — you can start it manually:"
+      echo "    launchctl load $LAUNCHD_PLIST"
+    fi
+  fi
+
+else
+  echo "• Skipping sync daemon install (not macOS)"
+fi
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ omo-mem installed successfully!"
@@ -806,10 +876,21 @@ echo "  • $OMO_MEM_DIR/AGENTS.md"
 echo "  • $OMO_MEM_DIR/memory/"
 echo "  • $OMO_MEM_DIR/plugin/omo-mem.js"
 echo "  • $OPENCODE_PLUGINS_DIR/omo-mem.js (plugin symlink)"
+if [ "$(uname)" = "Darwin" ] && [ -f "$SYNC_DAEMON_SRC" ]; then
+echo "  • $SYNC_DAEMON_SRC (sync daemon)"
+echo "  • $LAUNCHD_PLIST (launchd plist)"
+fi
 echo ""
 echo "Usage:"
 echo "  Start opencode in any project — memory is injected automatically."
 echo "  No @mention needed. The plugin runs on every session."
+if [ "$(uname)" = "Darwin" ] && [ -f "$SYNC_DAEMON_SRC" ]; then
+echo ""
+echo "Sync daemon:"
+echo "  Logs: tail -f /tmp/omo-mem-sync.log"
+echo "  Stop: launchctl unload $LAUNCHD_PLIST"
+echo "  Start: launchctl load $LAUNCHD_PLIST"
+fi
 echo ""
 echo "To work directly in the memory workspace:"
 echo "  cd $OMO_MEM_DIR && opencode"
