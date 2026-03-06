@@ -1,0 +1,11 @@
+# Runtime / machine-local files
+.sync-state.json
+/tmp/
+
+# OS
+.DS_Store
+
+# Editor
+*.swp
+*.swo
+*~
