@@ -744,9 +744,32 @@ export default async function plugin(_input) {
 PLUGIN_EOF
 echo "✓ Created $OMO_MEM_DIR/plugin/omo-mem.js"
 
-# Create symlink to opencode plugins directory
-ln -sf "$OMO_MEM_DIR/plugin/omo-mem.js" "$OPENCODE_PLUGINS_DIR/omo-mem.js"
-echo "✓ Symlinked to $OPENCODE_PLUGINS_DIR/omo-mem.js"
+# Build and deploy plugin to opencode plugins directory
+# The plugin must be a self-contained bundle (not a symlink) because opencode
+# resolves symlinks before module lookup, which breaks @opencode-ai/plugin resolution.
+echo "Building plugin bundle..."
+if command -v bun &> /dev/null; then
+  # Copy source to config dir temporarily (for node_modules resolution), bundle, then remove
+  cp "$OMO_MEM_DIR/plugin/omo-mem.js" "$HOME/.config/opencode/_omo-mem-src.js"
+  if bun build "$HOME/.config/opencode/_omo-mem-src.js" \
+    --outfile "$OPENCODE_PLUGINS_DIR/omo-mem.js" \
+    --target bun \
+    --external "fs/promises" \
+    --external "path" \
+    --external "os" 2>/dev/null; then
+    rm -f "$HOME/.config/opencode/_omo-mem-src.js"
+    echo "✓ Built and deployed bundle to $OPENCODE_PLUGINS_DIR/omo-mem.js"
+  else
+    rm -f "$HOME/.config/opencode/_omo-mem-src.js"
+    echo "⚠️  Bun bundle failed, falling back to direct copy"
+    cp "$OMO_MEM_DIR/plugin/omo-mem.js" "$OPENCODE_PLUGINS_DIR/omo-mem.js"
+    echo "✓ Copied (unbundled) to $OPENCODE_PLUGINS_DIR/omo-mem.js"
+  fi
+else
+  # No bun available - copy directly (may fail on some setups due to module resolution)
+  cp "$OMO_MEM_DIR/plugin/omo-mem.js" "$OPENCODE_PLUGINS_DIR/omo-mem.js"
+  echo "✓ Copied to $OPENCODE_PLUGINS_DIR/omo-mem.js (bun not found, bundle skipped)"
+fi
 
 # Patch opencode.json to register plugin
 PLUGIN_ENTRY="file://$HOME/.config/opencode/plugins/omo-mem.js"
@@ -875,7 +898,7 @@ echo "  • $OMO_MEM_DIR/MEMORY.md"
 echo "  • $OMO_MEM_DIR/AGENTS.md"
 echo "  • $OMO_MEM_DIR/memory/"
 echo "  • $OMO_MEM_DIR/plugin/omo-mem.js"
-echo "  • $OPENCODE_PLUGINS_DIR/omo-mem.js (plugin symlink)"
+echo "  • $OPENCODE_PLUGINS_DIR/omo-mem.js (plugin bundle)"
 if [ "$(uname)" = "Darwin" ] && [ -f "$SYNC_DAEMON_SRC" ]; then
 echo "  • $SYNC_DAEMON_SRC (sync daemon)"
 echo "  • $LAUNCHD_PLIST (launchd plist)"
