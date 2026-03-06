@@ -38,7 +38,13 @@ mkdir -p ~/.claude/agents
 
 ```bash
 mkdir -p ~/.config/opencode/plugins
-cp plugin/omo-mem.js ~/.config/opencode/plugins/omo-mem.js
+# Build self-contained bundle (required — symlinks break module resolution)
+cp plugin/omo-mem.js ~/.config/opencode/_omo-mem-src.js
+bun build ~/.config/opencode/_omo-mem-src.js \
+  --outfile ~/.config/opencode/plugins/omo-mem.js \
+  --target bun \
+  --external "fs/promises" --external "path" --external "os"
+rm ~/.config/opencode/_omo-mem-src.js
 ```
 
 Add to `~/.config/opencode/opencode.json`:
@@ -72,8 +78,9 @@ opencode
 ├── AGENTS.md           # Memory system rules
 ├── README.md           # This file
 ├── init.sh             # Installation script
+├── deploy-plugin.sh    # Rebuild & redeploy plugin bundle after source changes
 ├── plugin/
-│   └── omo-mem.js      # opencode plugin (auto-injected)
+│   └── omo-mem.js      # opencode plugin source
 └── memory/             # Daily notes
     └── YYYY-MM-DD.md   # Per-day session logs
 ```
@@ -82,11 +89,12 @@ opencode
 
 omo-mem v2 is implemented as an opencode plugin:
 
-- **Location**: `~/.config/opencode/plugins/omo-mem.js` (symlinked from `~/workspace/omo-mem/plugin/omo-mem.js`)
+- **Location**: `~/.config/opencode/plugins/omo-mem.js` (self-contained Bun bundle — **not** a symlink)
 - **Registration**: Automatically added to `~/.config/opencode/opencode.json` by init.sh
 - **Auto-injection**: Uses `experimental.chat.system.transform` hook to inject SOUL.md, MEMORY.md, and today's daily note into every session's system prompt
 - **Memory tools**: Exposes 6 CRUD tools (`memory_list`, `memory_read`, `memory_write`, `memory_append`, `memory_patch`, `memory_delete_lines`)
 - **Session initialization**: Creates today's daily note on `session.created` event if it doesn't exist
+- **Deployment**: `init.sh` builds the bundle via `bun build`; run `./deploy-plugin.sh` after editing `plugin/omo-mem.js`
 
 No `@mention` or manual activation required — the plugin runs automatically in every opencode session.
 
