@@ -1,0 +1,33 @@
+{
+  "name": "opencode-omo-mem",
+  "version": "2.0.0",
+  "description": "Persistent memory plugin for opencode — cross-session continuity via markdown files",
+  "type": "module",
+  "main": "plugin/omo-mem.js",
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "memory",
+    "persistent-memory",
+    "ai",
+    "context"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/autosquid/omo-mem"
+  },
+  "homepage": "https://github.com/autosquid/omo-mem#readme",
+  "bugs": {
+    "url": "https://github.com/autosquid/omo-mem/issues"
+  },
+  "scripts": {
+    "deploy": "bash deploy-plugin.sh"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.2.25"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

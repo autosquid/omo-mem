@@ -9,3 +9,17 @@
 *.swp
 *.swo
 *~
+
+# Personal data — user-specific, not for public repo
+SOUL.md
+MEMORY.md
+memory/
+slack-signin.png
+
+# opencode/tool runtime (machine-local, not synced via git)
+.sisyphus/
+
+# Python cache
+.ruff_cache/
+__pycache__/
+*.pyc

@@ -1,7 +1,5 @@
 # AGENTS.md - omo-mem Memory System
 
-**Generated:** 2026-03-04 | **Commit:** 482f37b | **Branch:** master
-
 This is your memory workspace. Files are your memory — don't rely on "mental notes."
 
 ---
@@ -34,7 +32,7 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 ├── MEMORY.md        # Long-term layer — curated knowledge
 ├── AGENTS.md        # This file — memory system rules
 ├── README.md        # User docs + sync setup guide
-├── init.sh          # Install: creates all files + ~/.claude/agents/omo-mem.md
+├── init.sh          # Install: creates all files + opencode plugin bundle
 ├── sync-setup.sh    # Syncthing cross-device sync helper
 ├── .stignore        # Syncthing exclusion patterns
 ├── plugin/          # opencode plugin (omo-mem.js)

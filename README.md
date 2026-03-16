@@ -1,102 +1,88 @@
 # omo-mem
 
-Persistent memory system for oh-my-opencode / opencode. Enables cross-session memory so you don't start from scratch.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![opencode plugin](https://img.shields.io/badge/opencode-plugin-blue)](https://opencode.ai)
+
+Persistent memory plugin for [opencode](https://opencode.ai). Gives the AI cross-session continuity — it remembers who you are, what you're working on, and what happened last session.
+
+**How it works:** Three markdown files form a memory hierarchy injected into every session's system prompt:
+- `SOUL.md` — AI behavior principles and work style (identity)
+- `MEMORY.md` — Long-term knowledge: projects, gotchas, preferences
+- `memory/YYYY-MM-DD.md` — Daily session logs (short-term)
+
+The plugin also exposes 6 CRUD tools so the AI can read and write memory during sessions.
 
 ## Quick Install
 
 ```bash
-# Clone and run init script
-git clone <repo-url> ~/workspace/omo-mem
+curl -fsSL https://raw.githubusercontent.com/autosquid/omo-mem/master/init.sh | bash
+```
+
+Or clone and run:
+
+```bash
+git clone https://github.com/autosquid/omo-mem ~/workspace/omo-mem
 cd ~/workspace/omo-mem && ./init.sh
-
-# Or run init.sh directly (if you have the script)
-./init.sh
 ```
 
-> **Note:** `init.sh` also installs the opencode plugin and patches `opencode.json` for auto-injection.
+> **Custom install path:** `OMO_MEM_DIR=/your/path ./init.sh`
 
-## Manual Installation (for sh/mba via Apple Notes)
-
-Copy these files to the target machine:
-
-### 1. Create directory structure
-
-```bash
-mkdir -p ~/workspace/omo-mem/memory
-mkdir -p ~/.claude/agents
-```
-
-### 2. Copy core files
-
-| Source | Destination |
-|--------|-------------|
-| `SOUL.md` | `~/workspace/omo-mem/SOUL.md` |
-| `MEMORY.md` | `~/workspace/omo-mem/MEMORY.md` |
-| `AGENTS.md` | `~/workspace/omo-mem/AGENTS.md` |
-
-### 3. Install plugin
-
-```bash
-mkdir -p ~/.config/opencode/plugins
-# Build self-contained bundle (required — symlinks break module resolution)
-cp plugin/omo-mem.js ~/.config/opencode/_omo-mem-src.js
-bun build ~/.config/opencode/_omo-mem-src.js \
-  --outfile ~/.config/opencode/plugins/omo-mem.js \
-  --target bun \
-  --external "fs/promises" --external "path" --external "os"
-rm ~/.config/opencode/_omo-mem-src.js
-```
-
-Add to `~/.config/opencode/opencode.json`:
-```json
-{
-  "plugins": ["file://~/.config/opencode/plugins/omo-mem.js"]
-}
-```
+After install, start opencode in any project — memory is injected automatically. No `@mention` needed.
 
 ## Usage
-
-The omo-mem plugin auto-loads in every opencode session. Memory is always available — no `@mention` needed.
 
 ```bash
 cd ~/any-project
 opencode
-# Memory is automatically injected into every session
+# Memory is automatically injected. The AI knows who you are.
 ```
 
-To work directly in the memory workspace:
+To edit memory directly:
 ```bash
 cd ~/workspace/omo-mem
 opencode
+# AI has full access to memory tools
 ```
+
 ## Directory Structure
 
 ```
 ~/workspace/omo-mem/
 ├── SOUL.md             # AI behavior principles (identity)
 ├── MEMORY.md           # Long-term memory (curated)
-├── AGENTS.md           # Memory system rules
+├── AGENTS.md           # Memory system rules (injected as project context)
 ├── README.md           # This file
 ├── init.sh             # Installation script
 ├── deploy-plugin.sh    # Rebuild & redeploy plugin bundle after source changes
+├── sync-daemon.js      # Apple Notes ↔ disk bidirectional sync (macOS)
+├── sync-setup.sh       # Syncthing cross-device sync helper
 ├── plugin/
 │   └── omo-mem.js      # opencode plugin source
-└── memory/             # Daily notes
-    └── YYYY-MM-DD.md   # Per-day session logs
+└── memory/             # Daily notes (gitignored — local only)
+    └── YYYY-MM-DD.md
 ```
 
 ## Plugin Architecture
 
 omo-mem v2 is implemented as an opencode plugin:
 
-- **Location**: `~/.config/opencode/plugins/omo-mem.js` (self-contained Bun bundle — **not** a symlink)
-- **Registration**: Automatically added to `~/.config/opencode/opencode.json` by init.sh
+- **Location**: `~/.config/opencode/plugins/omo-mem.js` (self-contained Bun bundle)
+- **Registration**: Automatically added to `~/.config/opencode/opencode.json` by `init.sh`
 - **Auto-injection**: Uses `experimental.chat.system.transform` hook to inject SOUL.md, MEMORY.md, and today's daily note into every session's system prompt
 - **Memory tools**: Exposes 6 CRUD tools (`memory_list`, `memory_read`, `memory_write`, `memory_append`, `memory_patch`, `memory_delete_lines`)
 - **Session initialization**: Creates today's daily note on `session.created` event if it doesn't exist
 - **Deployment**: `init.sh` builds the bundle via `bun build`; run `./deploy-plugin.sh` after editing `plugin/omo-mem.js`
 
-No `@mention` or manual activation required — the plugin runs automatically in every opencode session.
+### Memory Tools
+
+| Tool | Description |
+|------|-------------|
+| `memory_list` | List all memory files |
+| `memory_read` | Read SOUL.md, MEMORY.md, daily note, or any `memory/YYYY-MM-DD.md` |
+| `memory_write` | Overwrite a file (SOUL.md write-protected) |
+| `memory_append` | Append to a file without reading first |
+| `memory_patch` | Find-and-replace (first occurrence) |
+| `memory_delete_lines` | Delete a line range (1-indexed, inclusive) |
 
 ## Memory Hierarchy
 
@@ -106,130 +92,49 @@ No `@mention` or manual activation required — the plugin runs automatically in
 | **Long-term** | `MEMORY.md` | Machine topology, project context, lessons learned, preferences |
 | **Short-term** | `memory/YYYY-MM-DD.md` | Daily session logs, temporary context |
 
-## Cross-Machine Sync (Syncthing)
-
-omo-mem syncs across devices using [Syncthing](https://syncthing.net/) with public relays. This allows devices on different networks to sync without port forwarding.
-
-### Quick Setup
-
-```bash
-# Run the setup helper
-./sync-setup.sh
-```
-
-The script will:
-- Check if Syncthing is installed (with install instructions if not)
-- Show your device ID (needed to connect devices)
-- Print step-by-step folder setup instructions
-
-### Manual Setup
-
-1. **Install Syncthing**
-
-   macOS:
-   ```bash
-   brew install syncthing
-   brew services start syncthing
-   ```
-
-   Ubuntu:
-   ```bash
-   # Add official repo
-   sudo mkdir -p /etc/apt/keyrings
-   sudo curl -L -o /etc/apt/keyrings/syncthing-archive-keyring.gpg https://syncthing.net/release-key.gpg
-   echo "deb [signed-by=/etc/apt/keyrings/syncthing-archive-keyring.gpg] https://apt.syncthing.net/ syncthing stable" | sudo tee /etc/apt/sources.list.d/syncthing.list
-   sudo apt-get update && sudo apt-get install syncthing
-   
-   # Start service
-   systemctl --user enable syncthing
-   systemctl --user start syncthing
-   ```
-
-2. **Get your device ID**
-   ```bash
-   syncthing device-id
-   ```
-
-3. **Open Web UI**: http://localhost:8384
-
-4. **Add remote devices**: Paste device IDs from other machines
-
-5. **Add omo-mem folder**:
-   - Folder Label: `omo-mem`
-   - Folder Path: `~/workspace/omo-mem`
-   - Share with: Select all your devices
-
-### Synced Files
-
-| Synced | Excluded |
-|--------|----------|
-| SOUL.md | .git/ |
-| MEMORY.md | .DS_Store |
-| AGENTS.md | *.swp, *~ |
-| memory/*.md | .sisyphus/ |
-| README.md | .stversions/ |
-
-See `.stignore` for the full exclusion list.
-
-### Handling Conflicts
-
-When the same file is edited on multiple devices before syncing, Syncthing creates conflict files:
-
-```
-MEMORY.sync-conflict-20260226-143052-ABCDEFG.md
-```
-
-To resolve:
-```bash
-# Find conflicts
-find ~/workspace/omo-mem -name '*.sync-conflict*'
-
-# Compare with original
-diff MEMORY.md MEMORY.sync-conflict-*.md
-
-# Merge manually, then delete conflict file
-rm *.sync-conflict*
-```
-
-### Security
-
-- All traffic is TLS encrypted end-to-end
-- Public relays cannot read your data (they only relay encrypted packets)
-- No account required, fully decentralized
-
-### Useful Commands
-
-```bash
-# Check device ID
-syncthing device-id
-
-# Find sync conflicts
-find ~/workspace/omo-mem -name '*.sync-conflict*'
-
-# Check status (macOS)
-brew services info syncthing
-
-# Check status (Ubuntu)
-systemctl --user status syncthing
-```
-
 ## Customization
 
-Edit `MEMORY.md` sections to match your needs. The template includes:
+Edit `MEMORY.md` to add your own context:
+- Machine topology
+- Project architecture
+- Personal gotchas and lessons
+- Preferences and work style
 
-- 🖥️ Machine Topology
-- 📂 Project Context
-- 💡 Lessons Learned
-- ⚙️ Preferences
+Edit `SOUL.md` to adjust AI behavior principles. Changes take effect immediately on the next session.
 
-Edit `SOUL.md` to adjust AI behavior principles. The template includes:
+## Cross-Machine Sync
 
-- Core beliefs (what makes AI useful)
-- Work style (code, communication, failure handling)
-- Boundaries (what to do, what not to do)
+### Apple Notes sync (macOS — automatic)
 
-Add or remove sections as needed.
+`init.sh` installs `sync-daemon.js` as a launchd service. It syncs SOUL.md, MEMORY.md, and all daily notes bidirectionally between disk and Apple Notes every 60 seconds. This enables cross-machine sync via iCloud without Syncthing.
 
----
+```bash
+tail -f /tmp/omo-mem-sync.log    # monitor
+launchctl unload ~/Library/LaunchAgents/com.omo-mem.sync.plist   # stop
+launchctl load ~/Library/LaunchAgents/com.omo-mem.sync.plist     # start
+```
 
-*Inspired by OpenClaw's memory system. Adapted for oh-my-opencode.*
+### Syncthing (all platforms)
+
+For direct device-to-device sync without iCloud:
+
+```bash
+./sync-setup.sh   # guided setup
+```
+
+See [Syncthing docs](https://docs.syncthing.net/) for manual setup.
+
+## Development
+
+After editing `plugin/omo-mem.js`, rebuild and deploy:
+
+```bash
+./deploy-plugin.sh
+# Restart opencode for changes to take effect
+```
+
+Requirements: [Bun](https://bun.sh) ≥ 1.0
+
+## License
+
+MIT — see [LICENSE](LICENSE)
