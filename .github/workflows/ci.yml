@@ -14,7 +14,7 @@ jobs:
     env:
       OMO_MEM_DIR: /tmp/omo-mem-test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
       - run: bun install
       - name: Install opencode
@@ -45,7 +45,7 @@ jobs:
   test-sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Create test workspace
         run: |
           mkdir -p /tmp/omo-mem-sync-test/memory
