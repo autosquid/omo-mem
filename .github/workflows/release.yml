@@ -1,0 +1,63 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile || bun install
+
+      - name: Build plugin bundle
+        run: |
+          mkdir -p dist
+          bun build plugin/omo-mem.js \
+            --outfile dist/omo-mem.js \
+            --target bun \
+            --external "fs/promises" \
+            --external "path" \
+            --external "os"
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum omo-mem.js > SHA256SUMS
+
+      - name: Generate manifest
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          GIT_SHA="${GITHUB_SHA}"
+          BUILD_TIME_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          ARTIFACT_SHA256="$(cut -d' ' -f1 dist/SHA256SUMS)"
+
+          sed \
+            -e "s/__VERSION__/${VERSION}/g" \
+            -e "s/__TAG__/${TAG}/g" \
+            -e "s/__GIT_SHA__/${GIT_SHA}/g" \
+            -e "s/__BUILD_TIME_UTC__/${BUILD_TIME_UTC}/g" \
+            -e "s/__ARTIFACT_SHA256__/${ARTIFACT_SHA256}/g" \
+            release-manifest.template.json > dist/manifest.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/omo-mem.js
+            dist/SHA256SUMS
+            dist/manifest.json

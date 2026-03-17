@@ -1,0 +1,10 @@
+{
+  "name": "omo-mem",
+  "version": "__VERSION__",
+  "tag": "__TAG__",
+  "git_sha": "__GIT_SHA__",
+  "build_time_utc": "__BUILD_TIME_UTC__",
+  "artifact": "omo-mem.js",
+  "artifact_sha256": "__ARTIFACT_SHA256__",
+  "builder": "github-actions"
+}

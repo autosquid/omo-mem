@@ -17,10 +17,27 @@ The system maintains a three-layer memory hierarchy that is automatically inject
 
 The plugin provides 6 CRUD tools so the AI can proactively manage its own memory as you work.
 
-## Quick Install
+## Installation
+
+### One-line (recommended)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/autosquid/omo-mem/master/init.sh | bash
+curl -fsSL https://raw.githubusercontent.com/autosquid/omo-mem/master/install.sh | bash
+```
+
+### Pin a specific version (recommended for teams)
+
+```bash
+OMO_MEM_VERSION=v2.0.0 curl -fsSL https://raw.githubusercontent.com/autosquid/omo-mem/master/install.sh | bash
+```
+
+### Agent-driven install
+
+Paste this to your coding agent:
+
+```text
+Install and configure omo-mem by following:
+https://raw.githubusercontent.com/autosquid/omo-mem/master/docs/install.md
 ```
 
 Or clone and run:
@@ -33,6 +50,23 @@ cd ~/workspace/omo-mem && ./init.sh
 > **Custom install path:** `OMO_MEM_DIR=/your/path ./init.sh`
 
 After install, start opencode in any project. Memory is injected automatically. No `@mention` required.
+
+## Release Packages
+
+Yes, release packages are worth it. One-line install is convenient; release artifacts make installs auditable and reproducible.
+
+Each tagged release ships:
+- `omo-mem.js` (bundled plugin artifact)
+- `SHA256SUMS`
+- `manifest.json` (version, commit SHA, build metadata)
+
+Verify what you installed:
+
+```bash
+shasum -a 256 omo-mem.js
+```
+
+Compare with `SHA256SUMS` from the same release.
 
 ## Why this stack?
 
