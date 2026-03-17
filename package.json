@@ -22,7 +22,7 @@
     "url": "https://github.com/autosquid/omo-mem/issues"
   },
   "scripts": {
-    "deploy": "bash deploy-plugin.sh"
+    "deploy": "bash scripts/build.sh"
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.2.25"

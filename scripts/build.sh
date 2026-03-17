@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# deploy-plugin.sh — Rebuild and deploy the omo-mem plugin bundle
+# scripts/build.sh — Rebuild and deploy the omo-mem plugin bundle
 #
 # Run this after editing plugin/omo-mem.js to push changes to opencode.
-# Usage: ./deploy-plugin.sh
+# Usage: ./scripts/build.sh
 
 set -e
 

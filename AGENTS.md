@@ -6,7 +6,7 @@ This is your memory workspace. Files are your memory — don't rely on "mental n
 
 ## OVERVIEW
 
-Persistent memory system for opencode/oh-my-opencode. Enables cross-session continuity via a three-layer markdown hierarchy: **SOUL.md** (identity) → **MEMORY.md** (long-term) → **memory/YYYY-MM-DD.md** (daily). Pure markdown — no code, no build step. Cross-machine sync via Syncthing.
+Persistent memory system for opencode/oh-my-opencode. Enables cross-session continuity via plain markdown files: **SOUL.md** (identity) → **MEMORY.md** (long-term) → **memory/YYYY-MM-DD.md** (daily). Pure markdown — no code, no build step. Cross-machine sync via Apple Notes + iCloud.
 
 ---
 
@@ -19,8 +19,8 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 | Today's session context | `memory/YYYY-MM-DD.md` | Short-term layer — raw logs |
 | Search history > 2 days back | `memory/*.md` | `grep -r "keyword" memory/` |
 | Install on a new machine | `init.sh` | init.sh installs plugin, patches opencode.json |
-| Cross-device sync setup | `sync-setup.sh` | Syncthing public relays, no port forwarding |
-| Sync exclusion rules | `.stignore` | `.git`, `.sisyphus`, `.DS_Store` excluded |
+| Rebuild & redeploy plugin | `scripts/build.sh` | Requires Bun ≥ 1.0 |
+| Apple Notes sync daemon | `scripts/notes-sync.js` | Bidirectional sync every 60s via launchd |
 
 ---
 
@@ -33,9 +33,10 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 ├── AGENTS.md        # This file — memory system rules
 ├── README.md        # User docs + sync setup guide
 ├── init.sh          # Install: creates all files + opencode plugin bundle
-├── sync-setup.sh    # Syncthing cross-device sync helper
-├── .stignore        # Syncthing exclusion patterns
 ├── plugin/          # opencode plugin (omo-mem.js)
+├── scripts/
+│   ├── build.sh     # Rebuild & redeploy plugin bundle
+│   └── notes-sync.js # Apple Notes ↔ disk bidirectional sync
 └── memory/          # Short-term layer
     └── YYYY-MM-DD.md
 ```
@@ -136,17 +137,18 @@ Every few days:
 # Install on new machine (custom path: OMO_MEM_DIR=/custom/path ./init.sh)
 ./init.sh
 
-# Set up cross-device sync (Syncthing)
-./sync-setup.sh
+# Rebuild & redeploy plugin after editing plugin/omo-mem.js
+./scripts/build.sh
 
 # Search memory history
 grep -r "keyword" memory/
 
-# Find sync conflicts
-find . -name '*.sync-conflict*'
+# Monitor Apple Notes sync
+tail -f /tmp/omo-mem-sync.log
 
-# Check Syncthing status (macOS)
-brew services info syncthing
+# Stop/start sync daemon (macOS launchd)
+launchctl unload ~/Library/LaunchAgents/com.omo-mem.sync.plist
+launchctl load ~/Library/LaunchAgents/com.omo-mem.sync.plist
 ```
 
 ---
@@ -157,8 +159,8 @@ brew services info syncthing
 - **Don't** commit/push without being asked
 - **Don't** let `MEMORY.md` accumulate raw logs — curate, don't dump
 - **Don't** pretend to remember previous sessions — read the files
-- **Don't** edit `.sisyphus/` — opencode runtime data, excluded from sync
-- **Don't** version daily notes in git — they sync via Syncthing per-device
+- **Don't** edit `.sisyphus/` — opencode runtime data, not synced
+- **Don't** version daily notes in git — they sync via Apple Notes per-device
 - **Don't** try to `@omo-mem` — the plugin is always active
 
 ---

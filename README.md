@@ -9,7 +9,7 @@ It is a simple, opinionated system built on plain markdown files. No vector data
 
 ## How it works
 
-The system maintains a three-layer memory hierarchy that is automatically injected into every session's system prompt:
+omo-mem maintains three plain markdown files that are automatically injected into every session's system prompt:
 
 - **SOUL.md** — Who the AI is. Core behavior principles, work style, and non-negotiable boundaries.
 - **MEMORY.md** — What the AI knows. Long-term context like machine topology, project architectures, and hard-learned lessons.
@@ -78,7 +78,7 @@ This project exists because most "AI memory" solutions are over-engineered. We m
 
 ## Origins
 
-The three-layer memory hierarchy and the concept of a "SOUL.md" identity layer were inspired by [OpenClaw](https://github.com/openclaw). We took those core architectural ideas and stripped them down into a lightweight, markdown-first implementation for the opencode ecosystem.
+The idea of using plain markdown files as the canonical source of truth for AI memory — human-readable, editable, and git-diffable — was inspired by [OpenClaw](https://github.com/openclaw). We borrowed that philosophy and the file naming conventions (SOUL.md, MEMORY.md). The specific design here — SOUL.md as an identity layer injected into the system prompt, and the opencode plugin that automates it — is our own.
 
 ## Directory Structure
 
@@ -89,11 +89,11 @@ The three-layer memory hierarchy and the concept of a "SOUL.md" identity layer w
 ├── AGENTS.md           # Memory system rules (injected as project context)
 ├── README.md           # This file
 ├── init.sh             # Installation script
-├── deploy-plugin.sh    # Rebuild & redeploy plugin bundle
-├── sync-daemon.js      # Apple Notes ↔ disk bidirectional sync (macOS)
-├── sync-setup.sh       # Syncthing cross-device sync helper (Experimental)
 ├── plugin/
 │   └── omo-mem.js      # opencode plugin source
+├── scripts/
+│   ├── build.sh        # Rebuild & redeploy plugin bundle
+│   └── notes-sync.js   # Apple Notes ↔ disk bidirectional sync (macOS)
 └── memory/             # Daily notes (gitignored — local only)
     └── YYYY-MM-DD.md
 ```
@@ -120,9 +120,7 @@ omo-mem is implemented as a self-contained opencode plugin:
 
 ## Cross-Machine Sync
 
-### Apple Notes + iCloud (Primary)
-
-This is the designed and tested path for macOS users. `init.sh` installs `sync-daemon.js` as a background service (`launchd`). It syncs your memory files bidirectionally with Apple Notes every 60 seconds. This gives you seamless sync across your Macs via iCloud with zero maintenance.
+`init.sh` installs `scripts/notes-sync.js` as a background service (`launchd`). It syncs your memory files bidirectionally with Apple Notes every 60 seconds, giving you seamless sync across your Macs via iCloud with zero configuration.
 
 ```bash
 tail -f /tmp/omo-mem-sync.log    # monitor sync status
@@ -130,16 +128,12 @@ launchctl unload ~/Library/LaunchAgents/com.omo-mem.sync.plist   # stop
 launchctl load ~/Library/LaunchAgents/com.omo-mem.sync.plist     # start
 ```
 
-### Syncthing + Linux (Experimental)
-
-We include a `sync-setup.sh` script for Syncthing-based device-to-device sync. Note that this path is currently **experimental and untested**. If you are running on Linux or want to avoid iCloud, you can use this, but expect to do some manual configuration.
-
 ## Development
 
 After editing `plugin/omo-mem.js`, rebuild and redeploy:
 
 ```bash
-./deploy-plugin.sh
+./scripts/build.sh
 ```
 
 Requirements: [Bun](https://bun.sh) ≥ 1.0

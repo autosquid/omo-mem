@@ -239,8 +239,7 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 | Today's session context | `memory/YYYY-MM-DD.md` | Short-term layer — raw logs |
 | Search history > 2 days back | `memory/*.md` | `grep -r "keyword" memory/` |
 | Install on a new machine | `init.sh` | init.sh installs plugin, patches opencode.json |
-| Cross-device sync setup | `sync-setup.sh` | Syncthing public relays, no port forwarding |
-| Sync exclusion rules | `.stignore` | `.git`, `.sisyphus`, `.DS_Store` excluded |
+| Cross-device sync (Apple Notes) | `scripts/notes-sync.js` | macOS only — launchd daemon, syncs every 60s |
 
 ---
 
@@ -251,11 +250,12 @@ Persistent memory system for opencode/oh-my-opencode. Enables cross-session cont
 ├── SOUL.md          # Identity layer — AI principles & boundaries
 ├── MEMORY.md        # Long-term layer — curated knowledge
 ├── AGENTS.md        # This file — memory system rules
-├── README.md        # User docs + sync setup guide
+├── README.md        # User docs
 ├── init.sh          # Install: creates all files + opencode plugin bundle
-├── sync-setup.sh    # Syncthing cross-device sync helper
-├── .stignore        # Syncthing exclusion patterns
-├── plugin/          # opencode plugin (omo-mem.js)
+├── plugin/          # opencode plugin source (omo-mem.js)
+├── scripts/         # Dev and sync tooling
+│   ├── build.sh     # Rebuild + deploy plugin bundle (dev use)
+│   └── notes-sync.js # Apple Notes ↔ disk sync daemon (macOS)
 └── memory/          # Short-term layer
     └── YYYY-MM-DD.md
 ```
@@ -356,17 +356,16 @@ Every few days:
 # Install on new machine (custom path: OMO_MEM_DIR=/custom/path ./init.sh)
 ./init.sh
 
-# Set up cross-device sync (Syncthing)
-./sync-setup.sh
-
 # Search memory history
 grep -r "keyword" memory/
 
-# Find sync conflicts
-find . -name '*.sync-conflict*'
+# Rebuild plugin after editing plugin/omo-mem.js
+./scripts/build.sh
 
-# Check Syncthing status (macOS)
-brew services info syncthing
+# Check sync daemon (macOS only)
+tail -f /tmp/omo-mem-sync.log
+launchctl unload ~/Library/LaunchAgents/com.omo-mem.sync.plist
+launchctl load ~/Library/LaunchAgents/com.omo-mem.sync.plist
 ```
 
 ---
@@ -814,22 +813,23 @@ else
   echo ""
 fi
 
-# ─── Install sync-daemon.js ───────────────────────────────────────────────────
-SYNC_DAEMON_SRC="$OMO_MEM_DIR/sync-daemon.js"
+# ─── Install notes-sync.js ────────────────────────────────────────────────────
+SYNC_DAEMON_SRC="$OMO_MEM_DIR/scripts/notes-sync.js"
 LAUNCHD_PLIST="$HOME/Library/LaunchAgents/com.omo-mem.sync.plist"
 
 # Only install daemon on macOS
 if [ "$(uname)" = "Darwin" ]; then
 
-  # Copy sync-daemon.js if it lives next to init.sh (repo install)
+  # Copy notes-sync.js if it lives in scripts/ next to init.sh (repo install)
   SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  if [ -f "$SCRIPT_DIR/sync-daemon.js" ] && [ "$SCRIPT_DIR/sync-daemon.js" != "$SYNC_DAEMON_SRC" ]; then
-    cp "$SCRIPT_DIR/sync-daemon.js" "$SYNC_DAEMON_SRC"
-    echo "✓ Copied sync-daemon.js to $SYNC_DAEMON_SRC"
+  mkdir -p "$OMO_MEM_DIR/scripts"
+  if [ -f "$SCRIPT_DIR/scripts/notes-sync.js" ] && [ "$SCRIPT_DIR/scripts/notes-sync.js" != "$SYNC_DAEMON_SRC" ]; then
+    cp "$SCRIPT_DIR/scripts/notes-sync.js" "$SYNC_DAEMON_SRC"
+    echo "✓ Copied notes-sync.js to $SYNC_DAEMON_SRC"
   elif [ -f "$SYNC_DAEMON_SRC" ]; then
-    echo "• sync-daemon.js already at $SYNC_DAEMON_SRC"
+    echo "• notes-sync.js already at $SYNC_DAEMON_SRC"
   else
-    echo "⚠️  sync-daemon.js not found — skipping daemon install"
+    echo "⚠️  notes-sync.js not found — skipping daemon install"
   fi
 
   if [ -f "$SYNC_DAEMON_SRC" ]; then
