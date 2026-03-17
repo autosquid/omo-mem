@@ -226,7 +226,7 @@ This is your memory workspace. Files are your memory — don't rely on "mental n
 
 ## OVERVIEW
 
-Persistent memory system for opencode/oh-my-opencode. Enables cross-session continuity via a three-layer markdown hierarchy: **SOUL.md** (identity) → **MEMORY.md** (long-term) → **memory/YYYY-MM-DD.md** (daily). Pure markdown — no code, no build step. Cross-machine sync via Syncthing.
+Persistent memory system for opencode/oh-my-opencode. Enables cross-session continuity via plain markdown files: **SOUL.md** (identity) → **MEMORY.md** (long-term) → **memory/YYYY-MM-DD.md** (daily). Pure markdown — no code, no build step. Cross-machine sync via Apple Notes + iCloud.
 
 ---
 
@@ -377,7 +377,7 @@ launchctl load ~/Library/LaunchAgents/com.omo-mem.sync.plist
 - **Don't** let `MEMORY.md` accumulate raw logs — curate, don't dump
 - **Don't** pretend to remember previous sessions — read the files
 - **Don't** edit `.sisyphus/` — opencode runtime data, excluded from sync
-- **Don't** version daily notes in git — they sync via Syncthing per-device
+- **Don't** version daily notes in git — they sync via Apple Notes per-device
 - **Don't** try to `@omo-mem` — the plugin is always active
 
 ---
