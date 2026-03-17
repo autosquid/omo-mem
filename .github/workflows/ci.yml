@@ -1,0 +1,76 @@
+name: CI
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test-plugin:
+    runs-on: ubuntu-latest
+    env:
+      OMO_MEM_DIR: /tmp/omo-mem-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
+      - name: Install opencode
+        run: |
+          curl -fsSL https://opencode.ai/install | bash -s -- --version 1.2.25
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Verify opencode
+        run: opencode --version
+      - name: Run init.sh
+        run: OMO_MEM_DIR=/tmp/omo-mem-test bash init.sh
+      - name: Test A — memory_list
+        run: |
+          output=$(timeout 60 opencode run --model opencode/minimax-m2.5-free \
+            "Call the memory_list tool and output the result." 2>&1) || true
+          echo "--- output ---"; echo "$output"
+          echo "$output" | grep -q "SOUL.md" || { echo "FAIL: SOUL.md not in output"; exit 1; }
+          echo "$output" | grep -q "MEMORY.md" || { echo "FAIL: MEMORY.md not in output"; exit 1; }
+          echo "PASS: memory_list works"
+      - name: Test B — memory_append persists
+        run: |
+          timeout 60 opencode run --model opencode/minimax-m2.5-free \
+            "Append the exact text 'CI_SENTINEL_12345' to the daily note using memory_append with file='daily' and content='CI_SENTINEL_12345'." 2>&1 || true
+          daily_file="/tmp/omo-mem-test/memory/$(date +%Y-%m-%d).md"
+          cat "$daily_file"
+          grep -q "CI_SENTINEL_12345" "$daily_file" || { echo "FAIL: sentinel not found"; exit 1; }
+          echo "PASS: memory_append persisted"
+
+  test-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create test workspace
+        run: |
+          mkdir -p /tmp/omo-mem-sync-test/memory
+          echo "# SOUL.md" > /tmp/omo-mem-sync-test/SOUL.md
+          echo "# MEMORY.md" > /tmp/omo-mem-sync-test/MEMORY.md
+      - name: Run one sync cycle
+        run: |
+          mkdir -p /tmp/fake-bin
+          cp tests/fake-osascript.sh /tmp/fake-bin/osascript
+          chmod +x /tmp/fake-bin/osascript
+          export PATH="/tmp/fake-bin:$PATH"
+          OMO_MEM_DIR=/tmp/omo-mem-sync-test \
+            OMO_SYNC_INTERVAL=999999 \
+            timeout 10 node scripts/notes-sync.js || true
+      - name: Assert state file exists
+        run: |
+          test -f /tmp/omo-mem-sync-test/.sync-state.json || { echo "FAIL: .sync-state.json not found"; exit 1; }
+          echo "PASS: .sync-state.json exists"
+      - name: Assert state file entries
+        run: |
+          state=$(cat /tmp/omo-mem-sync-test/.sync-state.json)
+          echo "$state"
+          echo "$state" | grep -q '"SOUL.md"' || { echo "FAIL: SOUL.md missing from state"; exit 1; }
+          echo "$state" | grep -q '"MEMORY.md"' || { echo "FAIL: MEMORY.md missing from state"; exit 1; }
+          echo "PASS: state entries correct"
+      - name: Assert osascript was called
+        run: |
+          calls=$(cat /tmp/omo-mem-osascript-calls 2>/dev/null || echo 0)
+          echo "osascript calls: $calls"
+          [ "$calls" -gt 0 ] || { echo "FAIL: osascript never called"; exit 1; }
+          echo "PASS: osascript called $calls times"
