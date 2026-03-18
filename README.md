@@ -3,19 +3,29 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![opencode plugin](https://img.shields.io/badge/opencode-plugin-blue)](https://opencode.ai)
 
-Standard LLMs have the memory of a goldfish. Every session is a blank slate. omo-mem fixes this by giving your opencode agent a persistent identity and a long-term memory hierarchy that follows you across sessions and machines.
+Your AI forgets everything when the session ends. omo-mem fixes that — permanently, without a cloud service, without a database, without an API key.
 
-It is a simple, opinionated system built on plain markdown files. No vector databases, no complex RAG pipelines, no proprietary clouds. Just files that you can read, edit, and sync like any other code.
+## Why omo-mem
 
-## How it works
+Most "AI memory" plugins store memories in proprietary databases, require third-party sync services, or inject bloated context that slows your LLM down. omo-mem is different in three ways:
 
-omo-mem maintains three plain markdown files that are automatically injected into every session's system prompt:
+**Plain markdown files.** Your memory lives in files you can read, edit, grep, and version-control. No black boxes. If the plugin breaks, your memory still exists. If you switch tools, you take it with you.
 
-- **SOUL.md** — Who the AI is. Core behavior principles, work style, and non-negotiable boundaries.
-- **MEMORY.md** — What the AI knows. Long-term context like machine topology, project architectures, and hard-learned lessons.
-- **memory/YYYY-MM-DD.md** — What happened recently. Daily logs and short-term session context.
+**Apple Notes sync — zero config.** If you use a Mac, you already have iCloud. omo-mem ships a lightweight daemon that bridges your markdown files to Apple Notes, giving you seamless sync across all your Macs without configuring Syncthing, S3, or anything else.
 
-The plugin provides 6 CRUD tools so the AI can proactively manage its own memory as you work.
+**No API keys, no cloud, no lock-in.** Works entirely offline. There is no omo-mem server. Your memories never leave your machine (except through iCloud, which you control).
+
+## What it does
+
+omo-mem injects three memory layers into every session automatically:
+
+| File | Purpose |
+|------|---------|
+| `SOUL.md` | AI identity — behavior principles, work style, non-negotiables |
+| `MEMORY.md` | Long-term knowledge — machines, projects, lessons, preferences |
+| `memory/YYYY-MM-DD.md` | Daily log — session context, decisions, next-session notes |
+
+The AI gets 6 tools to actively manage its own memory as you work — no manual updates needed.
 
 ## Installation
 
@@ -23,21 +33,6 @@ The plugin provides 6 CRUD tools so the AI can proactively manage its own memory
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/autosquid/omo-mem/master/install.sh | bash
-```
-
-### Pin a specific version (recommended for teams)
-
-```bash
-OMO_MEM_VERSION=v2.0.0 curl -fsSL https://raw.githubusercontent.com/autosquid/omo-mem/master/install.sh | bash
-```
-
-### Agent-driven install
-
-Paste this to your coding agent:
-
-```text
-Install and configure omo-mem by following:
-https://raw.githubusercontent.com/autosquid/omo-mem/master/docs/install.md
 ```
 
 Or clone and run:
@@ -49,65 +44,22 @@ cd ~/workspace/omo-mem && ./init.sh
 
 > **Custom install path:** `OMO_MEM_DIR=/your/path ./init.sh`
 
-After install, start opencode in any project. Memory is injected automatically. No `@mention` required.
+Start opencode in any project. Memory is injected automatically. No `@mention` required.
 
-## Release Packages
-
-Yes, release packages are worth it. One-line install is convenient; release artifacts make installs auditable and reproducible.
-
-Each tagged release ships:
-- `omo-mem.js` (bundled plugin artifact)
-- `SHA256SUMS`
-- `manifest.json` (version, commit SHA, build metadata)
-
-Verify what you installed:
+### Pin a specific version
 
 ```bash
-shasum -a 256 omo-mem.js
+OMO_MEM_VERSION=v2.0.0 curl -fsSL https://raw.githubusercontent.com/autosquid/omo-mem/master/install.sh | bash
 ```
 
-Compare with `SHA256SUMS` from the same release.
+### Agent-driven install
 
-## Why this stack?
-
-This project exists because most "AI memory" solutions are over-engineered. We made specific choices to keep this tool invisible and reliable:
-
-- **Plain Markdown**: Databases are where data goes to die. Markdown is where it lives. You can grep it, edit it in Vim, or version control it. The AI understands it perfectly without embeddings or vector search.
-- **Apple Notes for Sync**: If you use a Mac, you already have a globally synced, encrypted, offline-capable database that works on an airplane. We use a small daemon to bridge your local markdown files to iCloud via Apple Notes. Zero config, zero extra services.
-- **Native Plugin API**: We didn't want a wrapper script or a system prompt hack. By building as a proper opencode plugin, we get clean hooks into the session lifecycle and tool registration without monkey-patching your environment.
-
-## Origins
-
-The idea of using plain markdown files as the canonical source of truth for AI memory — human-readable, editable, and git-diffable — was inspired by [OpenClaw](https://github.com/openclaw). We borrowed that philosophy and the file naming conventions (SOUL.md, MEMORY.md). The specific design here — SOUL.md as an identity layer injected into the system prompt, and the opencode plugin that automates it — is our own.
-
-## Directory Structure
-
-```
-~/workspace/omo-mem/
-├── SOUL.md             # AI behavior principles (identity)
-├── MEMORY.md           # Long-term memory (curated)
-├── AGENTS.md           # Memory system rules (injected as project context)
-├── README.md           # This file
-├── init.sh             # Installation script
-├── plugin/
-│   └── omo-mem.js      # opencode plugin source
-├── scripts/
-│   ├── build.sh        # Rebuild & redeploy plugin bundle
-│   └── notes-sync.js   # Apple Notes ↔ disk bidirectional sync (macOS)
-└── memory/             # Daily notes (gitignored — local only)
-    └── YYYY-MM-DD.md
+```text
+Install and configure omo-mem by following:
+https://raw.githubusercontent.com/autosquid/omo-mem/master/docs/install.md
 ```
 
-## Plugin Architecture
-
-omo-mem is implemented as a self-contained opencode plugin:
-
-- **Location**: `~/.config/opencode/plugins/omo-mem.js` (Bun bundle)
-- **Auto-injection**: Uses the `experimental.chat.system.transform` hook to inject memory layers into every prompt.
-- **Lifecycle**: Automatically creates the daily note on session creation.
-- **Tools**: Exposes 6 CRUD tools for the AI to interact with the files.
-
-### Memory Tools
+## Memory Tools
 
 | Tool | Description |
 |------|-------------|
@@ -118,14 +70,22 @@ omo-mem is implemented as a self-contained opencode plugin:
 | `memory_patch` | Find-and-replace (exact match) |
 | `memory_delete_lines` | Delete a line range (1-indexed, inclusive) |
 
-## Cross-Machine Sync
+## Cross-Machine Sync (macOS)
 
-`init.sh` installs `scripts/notes-sync.js` as a background service (`launchd`). It syncs your memory files bidirectionally with Apple Notes every 60 seconds, giving you seamless sync across your Macs via iCloud with zero configuration.
+`init.sh` installs `scripts/notes-sync.js` as a launchd background service. It syncs your memory files bidirectionally with Apple Notes every 60 seconds.
 
 ```bash
-tail -f /tmp/omo-mem-sync.log    # monitor sync status
-launchctl unload ~/Library/LaunchAgents/com.omo-mem.sync.plist   # stop
-launchctl load ~/Library/LaunchAgents/com.omo-mem.sync.plist     # start
+tail -f /tmp/omo-mem-sync.log                                         # monitor
+launchctl unload ~/Library/LaunchAgents/com.omo-mem.sync.plist        # stop
+launchctl load ~/Library/LaunchAgents/com.omo-mem.sync.plist          # start
+```
+
+## Release Packages
+
+Each tagged release ships a bundled `omo-mem.js`, `SHA256SUMS`, and `manifest.json`. Verify what you installed:
+
+```bash
+shasum -a 256 omo-mem.js  # compare with SHA256SUMS from the same release
 ```
 
 ## Development
@@ -137,6 +97,27 @@ After editing `plugin/omo-mem.js`, rebuild and redeploy:
 ```
 
 Requirements: [Bun](https://bun.sh) ≥ 1.0
+
+## Directory Structure
+
+```
+~/workspace/omo-mem/
+├── SOUL.md             # AI behavior principles (identity)
+├── MEMORY.md           # Long-term memory (curated)
+├── AGENTS.md           # Memory system rules (injected as project context)
+├── init.sh             # Installation script
+├── plugin/
+│   └── omo-mem.js      # opencode plugin source
+├── scripts/
+│   ├── build.sh        # Rebuild & redeploy plugin bundle
+│   └── notes-sync.js   # Apple Notes ↔ disk bidirectional sync (macOS)
+└── memory/             # Daily notes (gitignored — local only)
+    └── YYYY-MM-DD.md
+```
+
+## Origins
+
+The three-layer file convention (SOUL.md, MEMORY.md, daily notes) was inspired by [OpenClaw](https://github.com/openclaw). The opencode plugin, Apple Notes sync, and tooling here are our own.
 
 ## License
 
