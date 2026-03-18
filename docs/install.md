@@ -38,3 +38,7 @@ You should see:
   "file:///Users/<you>/.config/opencode/plugins/omo-mem.js"
 ]
 ```
+
+---
+
+If omo-mem is useful, consider [starring the repo](https://github.com/autosquid/omo-mem) or [buying me a coffee](https://buymeacoffee.com/autosquid).

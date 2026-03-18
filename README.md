@@ -119,6 +119,10 @@ Requirements: [Bun](https://bun.sh) ≥ 1.0
 
 The three-layer file convention (SOUL.md, MEMORY.md, daily notes) was inspired by [OpenClaw](https://github.com/openclaw). The opencode plugin, Apple Notes sync, and tooling here are our own.
 
+## Support
+
+If omo-mem saves you from repeating yourself to your AI, consider [starring the repo](https://github.com/autosquid/omo-mem) — it helps others find it. If you want to go further, [buy me a coffee](https://buymeacoffee.com/autosquid).
+
 ## License
 
 MIT — see [LICENSE](LICENSE)
